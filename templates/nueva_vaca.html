@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Nueva Vaca — Rodeo de Cría{% endblock %}
+{% block content %}
+<div class="card" style="border-top: 4px solid var(--green);">
+  <div class="card-title">➕ Dar de alta vaca nueva</div>
+  <form id="form-vaca">
+    <div class="form-group">
+      <label>IDE (caravana) *</label>
+      <input type="text" name="ide" placeholder="858000..." inputmode="numeric" required autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Año de nacimiento</label>
+      <input type="number" name="anio_nacimiento" placeholder="2024" min="2000" max="2030">
+    </div>
+    <div class="form-group">
+      <label>Origen</label>
+      <input type="text" name="origen" placeholder="LC, GB, GAUCHO..." autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Clase</label>
+      <select name="clase">
+        <option value="">— seleccionar —</option>
+        <option>PRIMIPARA</option>
+        <option>MULTIPARA</option>
+        <option>VAQ</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>IDE madre (si se conoce)</label>
+      <input type="text" name="ide_madre" placeholder="858000..." inputmode="numeric" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Observaciones</label>
+      <textarea name="observaciones" rows="2" placeholder="Opcional..."></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">✓ Registrar vaca</button>
+  </form>
+</div>
+<a href="/" class="btn btn-secondary mt-8">← Volver</a>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('form-vaca').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('.btn-primary');
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  await postForm('/vaca/nueva', e.target, (d) => {
+    e.target.reset();
+    setTimeout(() => window.location.href = '/vaca/' + d.ide, 1200);
+  });
+  btn.textContent = '✓ Registrar vaca'; btn.disabled = false;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Vaca {{ vaca.ide }} — Rodeo de Cría{% endblock %}
+{% block content %}
+
+<div class="card" style="border-top: 4px solid var(--green);">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+    <div>
+      <div style="font-size:11px; color:var(--text-s); text-transform:uppercase; letter-spacing:.05em;">Caravana</div>
+      <div style="font-size:22px; font-weight:700;">{{ vaca.ide }}</div>
+    </div>
+    <span class="badge {% if vaca.estado == 'Activa' %}badge-green{% else %}badge-red{% endif %}" style="font-size:14px;">
+      {{ vaca.estado or 'Activa' }}
+    </span>
+  </div>
+
+  <div class="data-grid">
+    <div class="data-item">
+      <div class="label">Año nacimiento</div>
+      <div class="value">{{ vaca.anio_nacimiento or '—' }}</div>
+    </div>
+    <div class="data-item">
+      <div class="label">Origen</div>
+      <div class="value">{{ vaca.origen or '—' }}</div>
+    </div>
+    <div class="data-item">
+      <div class="label">Clase</div>
+      <div class="value">{{ vaca.clase or '—' }}</div>
+    </div>
+    <div class="data-item">
+      <div class="label">Terneros</div>
+      <div class="value">{{ terneros|length }}</div>
+    </div>
+  </div>
+
+  {% if vaca.observaciones %}
+  <div class="alert alert-info mt-8" style="font-size:14px;">{{ vaca.observaciones }}</div>
+  {% endif %}
+
+  {% if madre %}
+  <div class="mt-8" style="font-size:13px; color:var(--text-s);">
+    Madre: <a href="/vaca/{{ madre.ide }}" style="color:var(--green); font-weight:600;">{{ madre.ide }}</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if eventos %}
+<div class="card">
+  <div class="card-title">Historial reproductivo</div>
+  <div class="timeline">
+    {% for ev in eventos %}
+    <div class="tl-item">
+      <div class="tl-dot {% if ev.eco_entore in ['GRANDE','CHICA'] or ev.diagnostico_iatf in ['PRENA','Preñada','PREÑADA','SUPERFICIAL','PROFUNDO'] %}green{% elif ev.eco_entore == 'VACIA' %}gray{% else %}amber{% endif %}"></div>
+      <div class="tl-year">
+        Temporada {{ ev.temporada }}
+        {% if ev.eco_entore in ['GRANDE','CHICA'] or ev.diagnostico_iatf in ['PRENA','Preñada','PREÑADA','SUPERFICIAL','PROFUNDO'] %}
+          <span class="badge badge-green" style="margin-left:6px;">Preñada</span>
+        {% elif ev.eco_entore == 'VACIA' or ev.diagnostico_iatf == 'CICLA' %}
+          <span class="badge badge-red" style="margin-left:6px;">Vacía</span>
+        {% endif %}
+      </div>
+      <div class="tl-content">
+        {% if ev.dao_sincro %}<div class="tl-row"><span class="tl-key">DAO sincro</span><span class="tl-val">{{ ev.dao_sincro }}</span></div>{% endif %}
+        {% if ev.toro_iatf and ev.toro_iatf not in ['ENTORE',''] %}<div class="tl-row"><span class="tl-key">Toro IATF</span><span class="tl-val">{{ ev.toro_iatf }}</span></div>{% endif %}
+        {% if ev.diagnostico_iatf %}<div class="tl-row"><span class="tl-key">Diagnóstico</span><span class="tl-val">{{ ev.diagnostico_iatf }}</span></div>{% endif %}
+        {% if ev.toro_entore and ev.toro_entore not in ['ENTORE','-',''] %}<div class="tl-row"><span class="tl-key">Toro entore</span><span class="tl-val">{{ ev.toro_entore }}</span></div>{% endif %}
+        {% if ev.eco_entore %}<div class="tl-row"><span class="tl-key">Eco entore</span><span class="tl-val">{{ ev.eco_entore }}</span></div>{% endif %}
+        {% if ev.ecografia_final %}<div class="tl-row"><span class="tl-key">Ecografía final</span><span class="tl-val">{{ ev.ecografia_final }}</span></div>{% endif %}
+        {% if ev.caravana_ternero %}<div class="tl-row"><span class="tl-key">Ternero</span><span class="tl-val">🐄 {{ ev.caravana_ternero }}</span></div>{% endif %}
+        {% if ev.observaciones %}<div class="tl-row"><span class="tl-key">Obs.</span><span class="tl-val">{{ ev.observaciones }}</span></div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if terneros %}
+<div class="card">
+  <div class="card-title">Terneros ({{ terneros|length }})</div>
+  {% for t in terneros %}
+  <div class="list-item">
+    <div style="font-size:24px;">{% if t.sexo == 'M' %}🐂{% else %}🐄{% endif %}</div>
+    <div class="list-item-main">
+      <div class="list-item-title">Caravana {{ t.caravana or '—' }} · {{ t.temporada }}</div>
+      <div class="list-item-sub">
+        {{ t.sexo or '?' }} · {{ t.raza or '?' }} · Potrero {{ t.potrero or '?' }}
+        {% if t.peso_destete %} · Destete: {{ t.peso_destete }} kg{% endif %}
+        {% if t.gmd %} · GMD: {{ t.gmd }} kg/d{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if hijos %}
+<div class="card">
+  <div class="card-title">Hijas en el rodeo ({{ hijos|length }})</div>
+  {% for h in hijos %}
+  <div class="list-item">
+    <div class="list-item-main">
+      <a href="/vaca/{{ h.ide }}" style="color:var(--green); font-weight:600; font-size:15px;">{{ h.ide }}</a>
+      <div class="list-item-sub">Nacida {{ h.anio_nacimiento or '?' }} · {{ h.clase or '—' }} · {{ h.estado or 'Activa' }}</div>
+    </div>
+    <span class="badge {% if h.estado == 'Activa' %}badge-green{% else %}badge-gray{% endif %}">{{ h.estado or 'Activa' }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div style="display:flex; gap:8px; margin-top:8px;">
+  <a href="/evento/nuevo?ide={{ vaca.ide }}" class="btn btn-amber btn-sm" style="flex:1; text-align:center;">+ Evento</a>
+  <a href="/buscar" class="btn btn-secondary btn-sm" style="flex:1; text-align:center;">← Buscar</a>
+</div>
+
+{% endblock %}
