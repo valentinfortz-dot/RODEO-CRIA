@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Importar datos masivo{% endblock %}
+{% block content %}
+
+<div class="card" style="border-top:4px solid var(--green);">
+  <div class="card-title">📥 Carga masiva de datos</div>
+  <div class="alert alert-info">
+    <strong>Flujo:</strong> ⬇ Descargá la plantilla → Completá en Excel → Guardá como CSV → ⬆ Subí acá
+  </div>
+</div>
+
+<!-- NACIMIENTOS -->
+<div class="card" style="border-left:4px solid var(--green);">
+  <div class="card-title">🐮 Nacimientos / Partos</div>
+  <p class="text-muted" style="margin-bottom:10px; font-size:13px;">Cargá todos los partos de la temporada de una vez. Incluye caravana, sexo, potrero y pesos al destete.</p>
+  <div class="form-group">
+    <label>Temporada</label>
+    <select id="temp-nac"><option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option></select>
+  </div>
+  <a href="/plantilla/nacimientos" class="btn btn-secondary btn-sm" style="margin-bottom:10px; display:inline-block;">⬇ Descargar plantilla nacimientos</a>
+  <div class="form-group">
+    <label>Archivo CSV</label>
+    <input type="file" id="file-nac" accept=".csv" style="padding:8px;">
+  </div>
+  <button class="btn btn-primary" onclick="importar('nacimientos','temp-nac','file-nac','res-nac')">✓ Importar nacimientos</button>
+  <div id="res-nac" style="margin-top:10px;"></div>
+</div>
+
+<!-- IATF -->
+<div class="card" style="border-left:4px solid var(--blue);">
+  <div class="card-title">💉 Inseminación artificial (IATF)</div>
+  <p class="text-muted" style="margin-bottom:10px; font-size:13px;">Cargá el toro IATF, DAO sincronización y toro entore para toda la tropa.</p>
+  <div class="form-group">
+    <label>Temporada</label>
+    <select id="temp-iatf"><option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option></select>
+  </div>
+  <a href="/plantilla/iatf" class="btn btn-secondary btn-sm" style="margin-bottom:10px; display:inline-block;">⬇ Descargar plantilla IATF</a>
+  <div class="form-group">
+    <label>Archivo CSV</label>
+    <input type="file" id="file-iatf" accept=".csv" style="padding:8px;">
+  </div>
+  <button class="btn" style="background:var(--blue);color:#fff;" onclick="importar('iatf','temp-iatf','file-iatf','res-iatf')">✓ Importar IATF</button>
+  <div id="res-iatf" style="margin-top:10px;"></div>
+</div>
+
+<!-- ECO ENTORE -->
+<div class="card" style="border-left:4px solid var(--amber);">
+  <div class="card-title">🔬 Ecografía entore</div>
+  <p class="text-muted" style="margin-bottom:10px; font-size:13px;">Resultado final de preñez para cada vaca. Las vacías se marcan automáticamente como vendidas.</p>
+  <div class="form-group">
+    <label>Temporada</label>
+    <select id="temp-eco"><option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option></select>
+  </div>
+  <input type="hidden" id="campo-eco" value="eco_entore">
+  <a href="/plantilla/eco" class="btn btn-secondary btn-sm" style="margin-bottom:10px; display:inline-block;">⬇ Descargar plantilla eco entore</a>
+  <div class="form-group">
+    <label>Archivo CSV</label>
+    <input type="file" id="file-eco" accept=".csv" style="padding:8px;">
+  </div>
+  <button class="btn btn-amber" onclick="importar('eco','temp-eco','file-eco','res-eco')">✓ Importar ecografías</button>
+  <div id="res-eco" style="margin-top:10px;"></div>
+</div>
+
+<!-- DIAGNÓSTICO IATF -->
+<div class="card" style="border-left:4px solid var(--gray);">
+  <div class="card-title">🩺 Diagnóstico IATF</div>
+  <p class="text-muted" style="margin-bottom:10px; font-size:13px;">Resultado del diagnóstico post-IATF (PRENA, CICLA, SUPERFICIAL, PROFUNDO).</p>
+  <div class="form-group">
+    <label>Temporada</label>
+    <select id="temp-diag"><option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option></select>
+  </div>
+  <a href="/plantilla/diagnostico" class="btn btn-secondary btn-sm" style="margin-bottom:10px; display:inline-block;">⬇ Descargar plantilla diagnóstico</a>
+  <div class="form-group">
+    <label>Archivo CSV</label>
+    <input type="file" id="file-diag" accept=".csv" style="padding:8px;">
+  </div>
+  <button class="btn btn-secondary" onclick="importar('eco','temp-diag','file-diag','res-diag', 'diagnostico_iatf')">✓ Importar diagnóstico</button>
+  <div id="res-diag" style="margin-top:10px;"></div>
+</div>
+
+<a href="/" class="btn btn-secondary mt-8">← Volver al inicio</a>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+async function importar(tipo, tempId, fileId, resId, campoOverride) {
+  const file = document.getElementById(fileId).files[0];
+  if (!file) { showToast('Seleccioná un archivo primero', 'error'); return; }
+  const fd = new FormData();
+  fd.append('archivo', file);
+  fd.append('temporada', document.getElementById(tempId).value);
+  if (campoOverride) fd.append('campo', campoOverride);
+  const res = await fetch(`/importar/${tipo}`, {method:'POST', body:fd});
+  const d = await res.json();
+  const div = document.getElementById(resId);
+  div.innerHTML = d.ok
+    ? `<div class="alert alert-success">${d.msg}${d.errores?.length ? '<br><small style="color:var(--red);">No encontradas: '+d.errores.join(', ')+'</small>' : ''}</div>`
+    : `<div class="alert alert-error">${d.error}</div>`;
+}
+</script>
+{% endblock %}
