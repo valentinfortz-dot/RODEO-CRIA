@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Rodeo de Cría{% endblock %}
+{% block extra_style %}
+<style>
+.tab-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.tab-btn { padding:8px 16px; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer;
+           border:1.5px solid var(--border); background:var(--white); color:var(--text-s); }
+.tab-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+.metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.metric { background:var(--gray-l); border-radius:8px; padding:12px; text-align:center; }
+.metric .num { font-size:22px; font-weight:700; }
+.metric .lbl { font-size:11px; color:var(--text-s); margin-top:2px; }
+.bar-row { margin-bottom:10px; }
+.bar-label { display:flex; justify-content:space-between; font-size:13px; margin-bottom:3px; }
+.bar-track { background:var(--gray-l); border-radius:5px; height:12px; overflow:hidden; }
+.bar-fill { height:12px; border-radius:5px; transition:width .5s; }
+.bar-fill.g { background:var(--green); }
+.bar-fill.a { background:var(--amber); }
+.bar-fill.r { background:#A32D2D; }
+.data-table { width:100%; border-collapse:collapse; font-size:13px; }
+.data-table th { background:var(--green); color:#fff; padding:7px 10px; text-align:left; font-size:12px; }
+.data-table td { padding:7px 10px; border-bottom:1px solid var(--gray-l); }
+.data-table tr:nth-child(even) td { background:var(--gray-l); }
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- Selector de temporada -->
+<div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+  <span style="font-weight:600;">Temporada:</span>
+  {% for t in temporadas %}
+  <a href="/dashboard?temporada={{ t }}"
+     class="badge {% if t == temporada %}badge-green{% else %}badge-gray{% endif %}"
+     style="font-size:14px; padding:6px 14px; text-decoration:none;">{{ t }}</a>
+  {% endfor %}
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('repro')">📋 Reproducción</button>
+  <button class="tab-btn" onclick="showTab('terneros')">🐄 Terneros</button>
+  <button class="tab-btn" onclick="showTab('historico')">📈 Histórico</button>
+  <button class="tab-btn" onclick="showTab('bajas')">⚠️ Candidatas baja</button>
+</div>
+
+<!-- TAB 1: REPRODUCCIÓN -->
+<div id="tab-repro" class="tab-panel active">
+
+  <!-- Resumen general por temporada -->
+  {% if prenez_general %}
+  <div class="card">
+    <div class="card-title">% Preñez general por temporada</div>
+    {% for row in prenez_general %}
+    {% set pct = ((row.prenadas / row.total) * 100)|round(1) if row.total > 0 else 0 %}
+    <div class="bar-row">
+      <div class="bar-label">
+        <span style="font-weight:600;">Temporada {{ row.temporada }}</span>
+        <span style="color:var(--text-s);">{{ row.prenadas }}/{{ row.total }} — <strong>{{ pct }}%</strong></span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill {% if pct >= 70 %}g{% elif pct >= 50 %}a{% else %}r{% endif %}" style="width:{{ pct }}%;"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- % preñez por toro IATF -->
+  {% if toros_iatf %}
+  <div class="card">
+    <div class="card-title">% Preñez por toro IATF — {{ temporada }}</div>
+    {% for t in toros_iatf %}
+    {% set pct = ((t.prenadas / t.total) * 100)|round(1) if t.total > 0 else 0 %}
+    <div class="bar-row">
+      <div class="bar-label">
+        <span style="font-weight:600;">{{ t.toro }}</span>
+        <span style="color:var(--text-s);">{{ t.prenadas }}/{{ t.total }} — <strong>{{ pct }}%</strong></span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill {% if pct >= 70 %}g{% elif pct >= 50 %}a{% else %}r{% endif %}" style="width:{{ pct }}%;"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- % preñez por toro entore -->
+  {% if toros_entore %}
+  <div class="card">
+    <div class="card-title">% Preñez por toro entore — {{ temporada }}</div>
+    {% for t in toros_entore %}
+    {% set pct = ((t.prenadas / t.total) * 100)|round(1) if t.total > 0 else 0 %}
+    <div class="bar-row">
+      <div class="bar-label">
+        <span style="font-weight:600;">{{ t.toro }}</span>
+        <span style="color:var(--text-s);">{{ t.prenadas }}/{{ t.total }} — <strong>{{ pct }}%</strong></span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill {% if pct >= 70 %}g{% elif pct >= 50 %}a{% else %}r{% endif %}" style="width:{{ pct }}%;"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- % preñez por año de nacimiento (edad) -->
+  {% if prenez_edad %}
+  <div class="card">
+    <div class="card-title">% Preñez por edad de vaca — {{ temporada }}</div>
+    <table class="data-table">
+      <tr><th>Año nac.</th><th>Total</th><th>Preñadas</th><th>%</th></tr>
+      {% for r in prenez_edad %}
+      {% set pct = ((r.prenadas / r.total) * 100)|round(1) if r.total > 0 else 0 %}
+      <tr>
+        <td>{{ r.anio_nacimiento }}</td>
+        <td>{{ r.total }}</td>
+        <td>{{ r.prenadas }}</td>
+        <td><span class="badge {% if pct >= 70 %}badge-green{% elif pct >= 50 %}badge-amber{% else %}badge-red{% endif %}">{{ pct }}%</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- TAB 2: TERNEROS -->
+<div id="tab-terneros" class="tab-panel">
+
+  <!-- Peso por sexo -->
+  {% if peso_sexo %}
+  <div class="card">
+    <div class="card-title">Peso al destete por sexo — {{ temporada }}</div>
+    <div class="metric-grid">
+      {% for r in peso_sexo %}
+      <div class="metric" style="border-left:4px solid {% if r.sexo=='M' %}var(--blue){% else %}var(--green){% endif %};">
+        <div class="num">{{ r.prom_peso or '—' }} kg</div>
+        <div class="lbl">Promedio {{ 'Machos' if r.sexo=='M' else 'Hembras' }} (n={{ r.n }})</div>
+        <div style="font-size:11px; color:var(--text-s); margin-top:4px;">Rango: {{ r.min }}–{{ r.max }} kg</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Peso y GMD por padre -->
+  {% if peso_padre %}
+  <div class="card">
+    <div class="card-title">Peso destete y GMD por padre — {{ temporada }}</div>
+    <table class="data-table">
+      <tr><th>Toro padre</th><th>Terneros</th><th>Peso prom (kg)</th><th>GMD (kg/d)</th></tr>
+      {% for r in peso_padre %}
+      <tr>
+        <td style="font-weight:600;">{{ r.padre }}</td>
+        <td>{{ r.n_terneros }}</td>
+        <td>{{ r.prom_peso or '—' }}</td>
+        <td><span class="badge {% if r.prom_gmd and r.prom_gmd >= 0.8 %}badge-green{% elif r.prom_gmd and r.prom_gmd >= 0.6 %}badge-amber{% else %}badge-red{% endif %}">{{ r.prom_gmd or '—' }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Peso y GMD por edad de la madre -->
+  {% if peso_edad_madre %}
+  <div class="card">
+    <div class="card-title">Peso destete y GMD según edad de la madre — {{ temporada }}</div>
+    <table class="data-table">
+      <tr><th>Año nac. madre</th><th>Terneros</th><th>Peso prom (kg)</th><th>GMD (kg/d)</th></tr>
+      {% for r in peso_edad_madre %}
+      <tr>
+        <td style="font-weight:600;">{{ r.anio_madre }}</td>
+        <td>{{ r.n }}</td>
+        <td>{{ r.prom_peso or '—' }}</td>
+        <td><span class="badge {% if r.prom_gmd and r.prom_gmd >= 0.8 %}badge-green{% elif r.prom_gmd and r.prom_gmd >= 0.6 %}badge-amber{% else %}badge-red{% endif %}">{{ r.prom_gmd or '—' }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- TAB 3: HISTÓRICO -->
+<div id="tab-historico" class="tab-panel">
+  {% if gmd_temporada %}
+  <div class="card">
+    <div class="card-title">GMD promedio al pie por temporada</div>
+    <table class="data-table">
+      <tr><th>Temporada</th><th>Terneros</th><th>GMD general</th><th>GMD Machos</th><th>GMD Hembras</th></tr>
+      {% for r in gmd_temporada %}
+      <tr>
+        <td style="font-weight:600;">{{ r.temporada }}</td>
+        <td>{{ r.n }}</td>
+        <td><span class="badge {% if r.gmd_prom and r.gmd_prom >= 0.8 %}badge-green{% elif r.gmd_prom and r.gmd_prom >= 0.6 %}badge-amber{% else %}badge-red{% endif %}">{{ r.gmd_prom or '—' }} kg/d</span></td>
+        <td>{{ r.gmd_m or '—' }}</td>
+        <td>{{ r.gmd_h or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if prenez_general %}
+  <div class="card">
+    <div class="card-title">Resumen reproductivo histórico</div>
+    <table class="data-table">
+      <tr><th>Temporada</th><th>Vacas</th><th>Preñadas</th><th>% Preñez</th></tr>
+      {% for r in prenez_general %}
+      {% set pct = ((r.prenadas / r.total) * 100)|round(1) if r.total > 0 else 0 %}
+      <tr>
+        <td style="font-weight:600;">{{ r.temporada }}</td>
+        <td>{{ r.total }}</td>
+        <td>{{ r.prenadas }}</td>
+        <td><span class="badge {% if pct >= 70 %}badge-green{% elif pct >= 50 %}badge-amber{% else %}badge-red{% endif %}">{{ pct }}%</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- TAB 4: CANDIDATAS A BAJA -->
+<div id="tab-bajas" class="tab-panel">
+  {% if candidatas %}
+  <div class="card">
+    <div class="card-title">⚠️ Candidatas a baja (2+ temporadas sin preñar)</div>
+    {% for v in candidatas %}
+    <a href="/vaca/{{ v.ide }}" style="text-decoration:none; color:inherit;">
+      <div class="list-item">
+        <div class="list-item-main">
+          <div class="list-item-title">{{ v.ide }}</div>
+          <div class="list-item-sub">Año {{ v.anio_nacimiento or '?' }} · {{ v.origen or '?' }} · {{ v.resumen }}</div>
+        </div>
+        <span style="color:var(--red); font-size:20px;">→</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card">
+    <p class="text-muted text-center">No hay candidatas a baja con los datos actuales.</p>
+  </div>
+  {% endif %}
+</div>
+
+<a href="/" class="btn btn-secondary mt-8">← Volver al inicio</a>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+{% endblock %}
