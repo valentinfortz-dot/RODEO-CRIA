@@ -16,8 +16,8 @@
     <div class="stat-label">Terneros registrados</div>
   </div>
   <div class="stat-card gray">
-    <div class="stat-num">{{ stats.eventos }}</div>
-    <div class="stat-label">Temporadas cargadas</div>
+    <div class="stat-num">{{ stats.vendidas }}</div>
+    <div class="stat-label">Vendidas / Baja</div>
   </div>
 </div>
 
@@ -36,9 +36,12 @@
   </a>
 </div>
 
-<div class="actions" style="grid-template-columns: 1fr;">
+<div class="actions" style="grid-template-columns:1fr 1fr;">
+  <a href="/importar" class="action-btn green-o">
+    <span class="icon">📥</span>Carga masiva
+  </a>
   <a href="/vaca/nueva" class="action-btn green-o">
-    <span class="icon">➕</span>Dar de alta vaca nueva
+    <span class="icon">➕</span>Nueva vaca
   </a>
 </div>
 
